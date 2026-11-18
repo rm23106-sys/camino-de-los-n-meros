@@ -1,0 +1,403 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>El camino de los números</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;600;700&family=STIX+Two+Text:ital,wght@1,500&display=swap">
+<style>
+/* Concepto: hoja cuadriculada de cuaderno; el tablero es un camino serpenteante de 25 casillas, la tarjeta de ejercicio queda al lado. */
+:root{
+  --bg:#F2F5F9; --grid:#D9E1EC; --card:#FFFFFF; --ink:#13213A; --muted:#55627A; --line:#C6D1E1;
+  --blue:#2459C7; --ok:#16764D; --okbg:#DDF3E8; --bad:#B3321F; --badbg:#FBE3DF;
+  --btn:#13213A; --btntext:#F2F5F9;
+  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --text:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --math:'STIX Two Text',Georgia,'Times New Roman',serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1726; --grid:#1B283D; --card:#162134; --ink:#E8EEF8; --muted:#9AA8C0; --line:#2C3C57;
+    --blue:#7FA6FF; --ok:#52D39B; --okbg:#143427; --bad:#FF8B7A; --badbg:#3A1C1A;
+    --btn:#E8EEF8; --btntext:#0F1726; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1726; --grid:#1B283D; --card:#162134; --ink:#E8EEF8; --muted:#9AA8C0; --line:#2C3C57;
+  --blue:#7FA6FF; --ok:#52D39B; --okbg:#143427; --bad:#FF8B7A; --badbg:#3A1C1A;
+  --btn:#E8EEF8; --btntext:#0F1726; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+  color:var(--ink); font-family:var(--text); font-size:16px; line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.05;margin:0;text-wrap:balance;letter-spacing:-0.01em}
+.sub{margin:4px 0 0;color:var(--muted);font-size:.95rem}
+.btn{
+  font:600 1rem/1 var(--text);background:var(--btn);color:var(--btntext);border:2px solid var(--btn);
+  border-radius:6px;padding:13px 20px;cursor:pointer;min-height:46px;
+}
+.btn:hover{filter:brightness(1.12)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink);filter:none}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.panel{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:20px}
+.setup{max-width:560px}
+.setup h2{font-family:var(--display);font-size:1.3rem;margin:0 0 4px}
+.setup p{margin:0 0 16px;color:var(--muted)}
+fieldset{border:0;padding:0;margin:0 0 16px}
+legend{font-weight:600;margin-bottom:8px;padding:0}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{position:relative}
+.seg input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.seg span{display:block;min-width:56px;text-align:center;padding:10px 16px;border:2px solid var(--line);border-radius:6px;font-weight:600;background:var(--card)}
+.seg input:checked+span{border-color:var(--ink);background:var(--btn);color:var(--btntext)}
+.seg input:focus-visible+span{outline:3px solid var(--blue);outline-offset:2px}
+.names{display:grid;gap:10px;margin-bottom:20px}
+.nrow{display:flex;align-items:center;gap:10px}
+.nrow input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.tok{
+  --pc:#888; flex:none; width:24px; height:24px; border-radius:50%; background:var(--pc); color:#fff;
+  font:700 12px/20px var(--text); text-align:center; border:2px solid var(--card); display:inline-block;
+}
+
+.game{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);grid-template-areas:"players" "card" "board"}
+#players{grid-area:players;display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;background:var(--card);border:2px solid var(--line);border-radius:999px;font-size:.9rem}
+.chip.cur{border-color:var(--ink)}
+.chip small{color:var(--muted)}
+.boardwrap{grid-area:board;min-width:0}
+.board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.cell{
+  --pc:#888; position:relative; aspect-ratio:1; min-width:0; background:var(--card); border:1.5px solid var(--line);
+  border-radius:6px; padding:4px; display:flex; flex-direction:column; justify-content:space-between;
+}
+.cell.marked{background:color-mix(in srgb,var(--pc) 22%,var(--card));border-color:var(--pc)}
+.cell .n{font:600 .75rem/1 var(--text);color:var(--muted);font-variant-numeric:tabular-nums}
+.cell .mk{position:absolute;top:3px;right:5px;font:700 .75rem/1 var(--text);color:var(--pc)}
+.cell.goal{border:2px solid var(--blue)}
+.cell .goaltxt{font:700 .6rem/1 var(--text);color:var(--blue);letter-spacing:.08em;text-align:center}
+.toks{display:flex;flex-wrap:wrap;gap:2px;justify-content:center}
+.toks .tok{width:20px;height:20px;font-size:10px;line-height:16px}
+.startrow{margin-top:8px;display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--card);border:1.5px dashed var(--line);border-radius:6px;font-size:.85rem;color:var(--muted);min-height:40px}
+.startrow .toks{justify-content:flex-start}
+.legend{margin:8px 0 0;font-size:.8rem;color:var(--muted)}
+
+.card{grid-area:card;min-width:0}
+.who{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.who .tok{width:34px;height:34px;font-size:15px;line-height:30px}
+.turn{font-family:var(--display);font-weight:600;font-size:1.15rem;line-height:1.2}
+.tag{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.ask{margin:0 0 6px;font-size:1.02rem}
+.expr{margin:0 0 16px;font-family:var(--math);font-size:clamp(1.7rem,6vw,2.3rem);line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.expr i,.opt i{font-family:var(--math);font-style:italic}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.opt{
+  display:flex;align-items:center;gap:10px;text-align:left;font:500 1.1rem/1.25 var(--text);padding:12px;min-height:54px;
+  background:var(--bg);color:var(--ink);border:2px solid var(--line);border-radius:6px;cursor:pointer;min-width:0;overflow-wrap:anywhere;
+}
+.opt b{flex:none;font:700 .8rem/1 var(--text);color:var(--muted);width:20px}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt.ok{border-color:var(--ok);background:var(--okbg)}
+.opt.bad{border-color:var(--bad);background:var(--badbg)}
+.opt.dim{opacity:.55}
+.fb{margin:14px 0 0;padding:12px 14px;border-radius:6px;font-size:.95rem}
+.fb.ok{background:var(--okbg);border-left:5px solid var(--ok)}
+.fb.bad{background:var(--badbg);border-left:5px solid var(--bad)}
+.fb.neutral{background:var(--bg);border-left:5px solid var(--blue)}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px}
+.die{width:60px;height:60px;border:2px solid var(--ink);border-radius:10px;background:var(--card);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:8px;gap:2px}
+.die span{border-radius:50%}
+.die span.on{background:var(--ink)}
+.rolling .die{animation:shake .3s infinite}
+@keyframes shake{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@media (prefers-reduced-motion: reduce){.rolling .die{animation:none}}
+
+details.doc{background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:14px 20px}
+details.doc summary{cursor:pointer;font-weight:600}
+details.doc h3{font-family:var(--display);font-size:1rem;margin:16px 0 4px}
+details.doc ul,details.doc ol{margin:0;padding-left:20px}
+details.doc li{margin:2px 0}
+
+@media (min-width:860px){
+  .game{grid-template-columns:minmax(0,520px) minmax(0,1fr);grid-template-areas:"players players" "board card";align-items:start}
+}
+@media (max-width:420px){
+  .opts{grid-template-columns:minmax(0,1fr)}
+  .toks .tok{width:18px;height:18px;font-size:9px;line-height:14px}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>El camino de los números</h1>
+      <p class="sub">Álgebra · Tercer ciclo · Términos semejantes y ecuaciones lineales</p>
+    </div>
+    <button class="btn ghost" id="reset" hidden>Cambiar jugadores</button>
+  </header>
+
+  <section class="panel setup" id="setup" aria-labelledby="setupTitle">
+    <h2 id="setupTitle">Armen la partida</h2>
+    <p>Cada jugador tiene un color. Se responde una tarjeta por turno; si aciertas, lanzas el dado y avanzas. Gana quien llegue primero a la casilla 25.</p>
+    <fieldset>
+      <legend>Jugadores</legend>
+      <div class="seg" id="count">
+        <label><input type="radio" name="count" value="1"><span>1</span></label>
+        <label><input type="radio" name="count" value="2"><span>2</span></label>
+        <label><input type="radio" name="count" value="3" checked><span>3</span></label>
+        <label><input type="radio" name="count" value="4"><span>4</span></label>
+      </div>
+    </fieldset>
+    <div class="names" id="names"></div>
+    <button class="btn" id="start">Comenzar</button>
+  </section>
+
+  <section class="game" id="game" hidden>
+    <div id="players" aria-label="Jugadores"></div>
+    <div class="panel card" id="card"></div>
+    <div class="boardwrap">
+      <div class="board" id="board" role="img" aria-label="Tablero de 25 casillas"></div>
+      <div class="startrow" id="startrow"></div>
+      <p class="legend">La casilla toma el color y la inicial de quien la resolvió.</p>
+    </div>
+  </section>
+
+  <details class="doc">
+    <summary>Para el docente</summary>
+    <h3>Aprendizaje esperado</h3>
+    <p style="margin:0">Reducir expresiones algebraicas y resolver ecuaciones lineales sencillas, participando de forma activa y colaborativa.</p>
+    <h3>Contenidos (31 tarjetas)</h3>
+    <ul>
+      <li>Reducción de términos semejantes y propiedad distributiva (13 tarjetas)</li>
+      <li>Ecuaciones lineales de uno y dos pasos, con la incógnita en ambos lados (13 tarjetas)</li>
+      <li>Problemas que se resuelven con una ecuación (5 tarjetas)</li>
+    </ul>
+    <h3>Cómo se juega</h3>
+    <ol>
+      <li>Elijan de 1 a 4 jugadores y escriban sus nombres.</li>
+      <li>En su turno, cada jugador lee la tarjeta y elige una respuesta.</li>
+      <li>Si acierta, lanza el dado y avanza esa cantidad de casillas. Si falla, se muestra la respuesta correcta y pasa el turno.</li>
+      <li>Gana quien llegue primero a la casilla 25. Las tarjetas se barajan y no se repiten hasta agotar el mazo.</li>
+    </ol>
+    <h3>Sugerencia de uso</h3>
+    <p style="margin:0">Proyecten el juego o úsenlo en 1 equipo por dispositivo. Al fallar una tarjeta, pidan al grupo que explique el paso donde está el error antes de continuar.</p>
+  </details>
+</div>
+
+<script>
+(function(){
+  var Q=[
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'3x + 5x',a:'8x',w:['15x','8x²','2x'],e:'Se suman los coeficientes (3 + 5 = 8) y la parte literal queda igual.'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'7a − 2a + 4a',a:'9a',w:['13a','9a²','5a'],e:'7 − 2 + 4 = 9, y la parte literal es a.'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'5x + 3y − 2x + y',a:'3x + 4y',w:['3x + 2y','7x + 4y','8xy'],e:'Se agrupan los términos con x (5x − 2x = 3x) y los términos con y (3y + y = 4y).'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'4m² + 3m²',a:'7m²',w:['7m⁴','12m²','7m'],e:'Son semejantes: se suman los coeficientes y el exponente no cambia.'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'2a + 3b − a + 5b',a:'a + 8b',w:['3a + 8b','a + 2b','9ab'],e:'2a − a = a y 3b + 5b = 8b.'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'6x − 9x',a:'−3x',w:['3x','−15x','−3'],e:'6 − 9 = −3, y la x se mantiene.'},
+    {t:'Propiedad distributiva',ask:'Desarrolla la expresión.',expr:'3(x + 2)',a:'3x + 6',w:['3x + 2','x + 6','3x + 5'],e:'El 3 multiplica a cada término del paréntesis: 3·x y 3·2.'},
+    {t:'Propiedad distributiva',ask:'Desarrolla y reduce.',expr:'2(3x − 4) + 5',a:'6x − 3',w:['6x + 1','6x − 9','5x + 1'],e:'2(3x − 4) = 6x − 8, y luego −8 + 5 = −3.'},
+    {t:'Propiedad distributiva',ask:'Desarrolla y reduce.',expr:'5x − (2x − 3)',a:'3x + 3',w:['3x − 3','7x − 3','7x + 3'],e:'El signo menos cambia los signos del paréntesis: 5x − 2x + 3.'},
+    {t:'Propiedad distributiva',ask:'Desarrolla y reduce.',expr:'4(a + 1) − 2a',a:'2a + 4',w:['6a + 4','2a + 1','2a − 4'],e:'4(a + 1) = 4a + 4; luego 4a − 2a = 2a.'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'9y − 4y + y',a:'6y',w:['4y','5y','14y'],e:'Recuerda que y vale 1y: 9 − 4 + 1 = 6.'},
+    {t:'Propiedad distributiva',ask:'Desarrolla la expresión.',expr:'−2(x − 5)',a:'−2x + 10',w:['−2x − 10','−2x − 5','2x − 10'],e:'−2 por x es −2x, y −2 por −5 es +10.'},
+    {t:'Términos semejantes',ask:'Reduce la expresión.',expr:'3x² + 2x − x² + 4x',a:'2x² + 6x',w:['4x² + 6x','2x² + 5x','8x³'],e:'3x² − x² = 2x² y 2x + 4x = 6x. Los términos x² y x no son semejantes.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'x + 7 = 12',a:'x = 5',w:['x = 19','x = −5','x = 84'],e:'Se resta 7 en ambos lados: x = 12 − 7.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'3x = 21',a:'x = 7',w:['x = 18','x = 63','x = 24'],e:'Se divide ambos lados entre 3.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'2x + 5 = 17',a:'x = 6',w:['x = 11','x = 12','x = 1'],e:'Primero se resta 5 (2x = 12) y luego se divide entre 2.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'5x − 4 = 21',a:'x = 5',w:['x = 4','x = 25','x = 17/5'],e:'Se suma 4 (5x = 25) y luego se divide entre 5.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'x/4 = 3',a:'x = 12',w:['x = 3/4','x = 7','x = 1/12'],e:'Se multiplica ambos lados por 4.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'3x + 2 = x + 10',a:'x = 4',w:['x = 6','x = 2','x = 12'],e:'Se pasa x a la izquierda (2x + 2 = 10), luego 2x = 8 y x = 4.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'4x − 7 = 2x + 5',a:'x = 6',w:['x = 1','x = −1','x = 12'],e:'2x = 12, así que x = 6.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'2(x + 3) = 14',a:'x = 4',w:['x = 7','x = 8','x = 5'],e:'Se desarrolla: 2x + 6 = 14, luego 2x = 8 y x = 4.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'7x − 3 = 4x + 9',a:'x = 4',w:['x = 2','x = 12','x = 3'],e:'3x = 12, así que x = 4.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'3(x − 2) = 2x + 1',a:'x = 7',w:['x = 5','x = 3','x = −7'],e:'3x − 6 = 2x + 1, luego x = 7.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'x − 9 = −2',a:'x = 7',w:['x = −11','x = 11','x = −7'],e:'Se suma 9 en ambos lados: x = −2 + 9.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'6x + 1 = 4x − 7',a:'x = −4',w:['x = 4','x = −3','x = −1'],e:'2x + 1 = −7, luego 2x = −8 y x = −4.'},
+    {t:'Ecuaciones lineales',ask:'Resuelve la ecuación.',expr:'(x + 1)/2 = 5',a:'x = 9',w:['x = 10','x = 11','x = 4'],e:'Se multiplica por 2 (x + 1 = 10) y se resta 1.'},
+    {t:'Problema',word:true,ask:'Pensé un número, lo multipliqué por 3 y le sumé 4. Obtuve 19. ¿Qué número pensé?',expr:'',a:'5',w:['7','15','6'],e:'3x + 4 = 19, entonces 3x = 15 y x = 5.'},
+    {t:'Problema',word:true,ask:'La suma de tres números consecutivos es 33. ¿Cuál es el menor?',expr:'',a:'10',w:['11','12','9'],e:'x + (x + 1) + (x + 2) = 33, entonces 3x + 3 = 33 y x = 10.'},
+    {t:'Problema',word:true,ask:'Juan tiene x cromos y María tiene el doble. Juntos tienen 27. ¿Cuántos cromos tiene Juan?',expr:'',a:'9',w:['18','13','6'],e:'x + 2x = 27, entonces 3x = 27 y x = 9.'},
+    {t:'Problema',word:true,ask:'Un rectángulo mide x cm de largo y 5 cm de ancho. Su perímetro es 26 cm. ¿Cuánto mide el largo?',expr:'',a:'8 cm',w:['13 cm','16 cm','21 cm'],e:'2x + 10 = 26, entonces 2x = 16 y x = 8.'},
+    {t:'Problema',word:true,ask:'Ana tenía $10 y ahorra $4 cada semana. ¿Cuántas semanas necesita para juntar $30?',expr:'',a:'5 semanas',w:['4 semanas','6 semanas','10 semanas'],e:'10 + 4x = 30, entonces 4x = 20 y x = 5.'}
+  ];
+  var COLORS=['#2F62D1','#C8620F','#1E8F5E','#A63A9C'];
+  var GOAL=25;
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $=function(s){return document.querySelector(s)};
+  var S=null, count=3, busy=false;
+
+  function sleep(ms){return new Promise(function(r){setTimeout(r,reduce?0:ms)})}
+  function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function fmt(s,word){s=esc(s);return word?s:s.replace(/[a-z]/g,'<i>$&</i>')}
+  function initial(n){return esc((n||'?').trim().charAt(0).toUpperCase()||'?')}
+  function tok(p){return '<span class="tok" style="--pc:'+p.color+'">'+initial(p.name)+'</span>'}
+
+  /* Configuración */
+  function buildNames(){
+    var h='';
+    for(var i=0;i<4;i++){
+      h+='<div class="nrow" id="nrow'+i+'"'+(i>=count?' hidden':'')+'><span class="tok" style="--pc:'+COLORS[i]+'">'+(i+1)+'</span>'+
+         '<label class="sr" for="pn'+i+'" style="position:absolute;left:-9999px">Nombre del jugador '+(i+1)+'</label>'+
+         '<input id="pn'+i+'" type="text" maxlength="16" placeholder="Jugador '+(i+1)+'" autocomplete="off"></div>';
+    }
+    $('#names').innerHTML=h;
+  }
+  document.querySelectorAll('input[name=count]').forEach(function(r){
+    r.addEventListener('change',function(){
+      count=+r.value;
+      for(var i=0;i<4;i++){var row=document.getElementById('nrow'+i);if(row)row.hidden=i>=count}
+    });
+  });
+  buildNames();
+
+  function startGame(names){
+    var players=[];
+    for(var i=0;i<count;i++){players.push({name:names[i]||('Jugador '+(i+1)),color:COLORS[i],pos:0})}
+    S={players:players,turn:0,deck:[],marks:{},phase:'ask',cur:null};
+    draw();
+    $('#setup').hidden=true; $('#game').hidden=false; $('#reset').hidden=false;
+    render();
+  }
+  $('#start').addEventListener('click',function(){
+    var names=[];
+    for(var i=0;i<count;i++){names.push(($('#pn'+i).value||'').trim())}
+    startGame(names);
+  });
+  $('#reset').addEventListener('click',function(){
+    if(busy)return;
+    S=null; $('#game').hidden=true; $('#reset').hidden=true; $('#setup').hidden=false;
+  });
+
+  function draw(){
+    if(!S.deck.length){S.deck=shuffle(Q.map(function(_,i){return i}))}
+    var q=Q[S.deck.pop()];
+    S.cur={q:q,options:shuffle([q.a].concat(q.w)),picked:null,roll:null,msg:''};
+    S.phase='ask';
+  }
+
+  /* Dibujo */
+  function cellOrder(){
+    var out=[];
+    for(var r=0;r<5;r++){
+      var fromBottom=4-r, base=fromBottom*5, nums=[1,2,3,4,5].map(function(k){return base+k});
+      if(fromBottom%2===1)nums.reverse();
+      out=out.concat(nums);
+    }
+    return out;
+  }
+  var ORDER=cellOrder();
+
+  function renderBoard(){
+    var h='';
+    ORDER.forEach(function(n){
+      var owner=S.marks[n], mk=owner!==undefined, p=mk?S.players[owner]:null;
+      var here=S.players.filter(function(pl){return pl.pos===n}).map(tok).join('');
+      h+='<div class="cell'+(n===GOAL?' goal':'')+(mk?' marked':'')+'"'+(mk?' style="--pc:'+p.color+'"':'')+'>'+
+         '<span class="n">'+n+'</span>'+(mk?'<span class="mk">'+initial(p.name)+'</span>':'')+
+         (n===GOAL?'<span class="goaltxt">META</span>':'')+
+         '<span class="toks">'+here+'</span></div>';
+    });
+    $('#board').innerHTML=h;
+    var at0=S.players.filter(function(pl){return pl.pos===0}).map(tok).join('');
+    $('#startrow').innerHTML='<span>Salida</span><span class="toks">'+at0+'</span>';
+  }
+
+  function renderPlayers(){
+    $('#players').innerHTML=S.players.map(function(p,i){
+      return '<div class="chip'+(i===S.turn&&S.phase!=='won'?' cur':'')+'">'+tok(p)+'<b>'+esc(p.name)+'</b><small>'+(p.pos?'casilla '+p.pos:'salida')+'</small></div>';
+    }).join('');
+  }
+
+  var PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+  function dieHTML(v){
+    var on=PIPS[v]||[], h='';
+    for(var i=0;i<9;i++){h+='<span'+(on.indexOf(i)>-1?' class="on"':'')+'></span>'}
+    return '<div class="die" role="img" aria-label="Dado: '+v+'">'+h+'</div>';
+  }
+
+  function renderCard(){
+    var P=S.players[S.turn], c=S.cur, q=c.q, ph=S.phase;
+    var h='<div class="who">'+tok(P)+'<div><div class="turn">Turno de '+esc(P.name)+'</div><div class="tag">'+esc(q.t)+'</div></div></div>';
+    if(ph==='won'){
+      h='<div class="who">'+tok(P)+'<div><div class="turn">¡'+esc(P.name)+' llegó a la meta!</div><div class="tag">Fin de la partida</div></div></div>'+
+        '<div class="fb ok" aria-live="polite">'+esc(c.msg)+'</div>'+
+        '<div class="actions">'+dieHTML(c.roll)+'<button class="btn" data-act="again">Jugar otra vez</button><button class="btn ghost" data-act="change">Cambiar jugadores</button></div>';
+      $('#card').innerHTML=h; return;
+    }
+    h+='<p class="ask">'+esc(q.ask)+'</p>';
+    if(q.expr)h+='<p class="expr">'+fmt(q.expr,false)+'</p>';
+    var letters=['A','B','C','D'];
+    h+='<div class="opts" role="group" aria-label="Respuestas">';
+    c.options.forEach(function(o,i){
+      var cls='opt';
+      if(c.picked!==null){
+        if(o===q.a)cls+=' ok'; else if(o===c.picked)cls+=' bad'; else cls+=' dim';
+      }
+      h+='<button class="'+cls+'" data-opt="'+i+'"'+(c.picked!==null?' disabled':'')+'><b>'+letters[i]+'</b><span>'+fmt(o,!!q.word)+'</span></button>';
+    });
+    h+='</div>';
+    if(ph==='correct'){
+      h+='<div class="fb ok" aria-live="polite"><b>¡Correcto!</b> '+esc(q.e)+' Lanza el dado para avanzar.</div>'+
+         '<div class="actions"><button class="btn" data-act="roll">Lanzar dado</button></div>';
+    }else if(ph==='wrong'){
+      h+='<div class="fb bad" aria-live="polite"><b>No es esa.</b> La respuesta es '+fmt(q.a,!!q.word)+'. '+esc(q.e)+' Pasa el turno.</div>'+
+         '<div class="actions"><button class="btn" data-act="next">Siguiente turno</button></div>';
+    }else if(ph==='rolling'){
+      h+='<div class="fb neutral" aria-live="polite">Lanzando el dado…</div><div class="actions rolling">'+dieHTML(c.roll||1)+'</div>';
+    }else if(ph==='moved'){
+      h+='<div class="fb ok" aria-live="polite">'+esc(c.msg)+'</div>'+
+         '<div class="actions">'+dieHTML(c.roll)+'<button class="btn" data-act="next">Siguiente turno</button></div>';
+    }
+    $('#card').innerHTML=h;
+  }
+
+  function render(){renderPlayers();renderBoard();renderCard()}
+
+  /* Acciones */
+  async function roll(){
+    if(busy||S.phase!=='correct')return;
+    busy=true; S.phase='rolling'; S.cur.roll=1; render();
+    var r=1+Math.floor(Math.random()*6);
+    for(var i=0;i<8;i++){S.cur.roll=1+Math.floor(Math.random()*6);renderCard();await sleep(75)}
+    S.cur.roll=r; renderCard(); await sleep(350);
+    var p=S.players[S.turn], from=p.pos, target=Math.min(GOAL,from+r);
+    while(p.pos<target){p.pos++;renderBoard();renderPlayers();await sleep(190)}
+    S.marks[p.pos]=S.turn;
+    if(p.pos>=GOAL){
+      S.phase='won'; S.cur.msg='Sacó '+r+' y completó el camino. Respondió bien una tarjeta en cada turno que avanzó.';
+    }else{
+      S.phase='moved'; S.cur.msg='Sacaste '+r+': avanzas de la casilla '+(from||'salida')+' a la '+p.pos+'.';
+    }
+    busy=false; render();
+  }
+  function next(){
+    if(busy)return;
+    S.turn=(S.turn+1)%S.players.length; draw(); render();
+    var first=document.querySelector('.opt'); if(first&&first.focus)first.focus({preventScroll:true});
+  }
+  $('#card').addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b||!S||busy)return;
+    if(b.dataset.opt!==undefined&&S.phase==='ask'){
+      var c=S.cur, val=c.options[+b.dataset.opt];
+      c.picked=val; S.phase=(val===c.q.a)?'correct':'wrong'; render();
+    }else if(b.dataset.act==='roll')roll();
+    else if(b.dataset.act==='next')next();
+    else if(b.dataset.act==='again'){
+      S.players.forEach(function(p){p.pos=0}); S.marks={}; S.turn=0; S.deck=[]; draw(); render();
+    }else if(b.dataset.act==='change')$('#reset').click();
+  });
+})();
+</script>
+
+</body></html>
